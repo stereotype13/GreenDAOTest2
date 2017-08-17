@@ -11,4 +11,5 @@ import android.widget.ListView;
 public interface ListViewFragmentListener {
     void onListViewItemLongClick(int itemIndex, ListAdapter listAdapter);
     void refreshListViewFragment(ListView listView, SwipeRefreshLayout swipeRefreshLayout);
+    void onNewUserInsert(User user);
 }

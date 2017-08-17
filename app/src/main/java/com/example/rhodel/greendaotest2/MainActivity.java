@@ -26,12 +26,23 @@ import org.greenrobot.greendao.query.QueryBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements ListViewFragmentListener {
+public class MainActivity extends AppCompatActivity implements ListViewFragmentListener, DataChangeListener {
 
     private ListView mListView1;
     private DaoSession daoSession;
     private UserDao userDao;
     private SwipeRefreshLayout mSwipeRefreshLayout;
+    private ListViewFragment listViewFragment;
+
+    @Override
+    public void onDataChanged() {
+        listViewFragment.onDataChanged();
+    }
+
+    @Override
+    public void onNewUserInsert(User user) {
+        userDao.insert(user);
+    }
 
     @Override
     public void onListViewItemLongClick(int itemIndex, ListAdapter listAdapter) {
@@ -85,7 +96,7 @@ public class MainActivity extends AppCompatActivity implements ListViewFragmentL
 
 
         if (savedInstanceState == null) {
-            ListViewFragment listViewFragment = new ListViewFragment();
+            listViewFragment = new ListViewFragment();
             FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
             fragmentTransaction.add(R.id.activityMain, listViewFragment);
             fragmentTransaction.commit();
@@ -99,15 +110,14 @@ public class MainActivity extends AppCompatActivity implements ListViewFragmentL
 
                 Fragment addUserFragment = new AddUserFragment();
                 FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.activityMain, addUserFragment);
+
+                fragmentTransaction.setCustomAnimations(R.anim.slide_up, R.anim.no_movement, R.anim.no_movement, R.anim.slide_down);
+                fragmentTransaction.add(R.id.activityMain, addUserFragment);
                 fragmentTransaction.addToBackStack(null);
                 fragmentTransaction.commit();
 
 
-                User user = new User();
-                user.setName("Joe Blow");
-                userDao.insert(user);
-                //refreshListView1();
+
             }
         });
 
