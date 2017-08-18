@@ -1,10 +1,7 @@
 package com.example.rhodel.greendaotest2;
 
-import android.content.Context;
-import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -13,26 +10,44 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import org.greenrobot.greendao.query.DeleteQuery;
-import org.greenrobot.greendao.query.QueryBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements ListViewFragmentListener, DataChangeListener {
+public class MainActivity extends AppCompatActivity implements ListViewFragmentListener, DataChangeListener, ModeChangeListener {
 
-    private ListView mListView1;
+    private FloatingActionButton fab;
+    private FloatingActionButton fabSave;
+    private FloatingActionButton fabCancel;
     private DaoSession daoSession;
     private UserDao userDao;
-    private SwipeRefreshLayout mSwipeRefreshLayout;
     private ListViewFragment listViewFragment;
+    private ModeChangeListener.Mode mMode;
+
+    @Override
+    public void onModeChange(Mode mode) {
+        mMode = mode;
+        switch (mode) {
+            case LIST_MODE:
+                fab.setVisibility(View.VISIBLE);
+                fabSave.setVisibility(View.GONE);
+                fabCancel.setVisibility(View.GONE);
+                break;
+
+            case ADD_MODE:
+                fab.setVisibility(View.GONE);
+                fabSave.setVisibility(View.VISIBLE);
+                fabCancel.setVisibility(View.VISIBLE);
+                break;
+
+            default:
+
+        }
+    }
 
     @Override
     public void onDataChanged() {
@@ -96,14 +111,22 @@ public class MainActivity extends AppCompatActivity implements ListViewFragmentL
 
 
         if (savedInstanceState == null) {
+            mMode = Mode.LIST_MODE;
             listViewFragment = new ListViewFragment();
             FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-            fragmentTransaction.add(R.id.activityMain, listViewFragment);
+            fragmentTransaction.add(R.id.activityMain, listViewFragment, "listViewFragment");
             fragmentTransaction.commit();
         }
+        else {
+            mMode = (ModeChangeListener.Mode)savedInstanceState.getSerializable("MODE");
+            listViewFragment = (ListViewFragment) getSupportFragmentManager().findFragmentByTag("listViewFragment");
+        }
 
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+        fabSave = (FloatingActionButton) findViewById(R.id.fabSave);
+        fabCancel = (FloatingActionButton) findViewById(R.id.fabCancel);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        final ModeChangeListener modeChangeListener = (ModeChangeListener) this;
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -112,17 +135,29 @@ public class MainActivity extends AppCompatActivity implements ListViewFragmentL
                 FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
 
                 fragmentTransaction.setCustomAnimations(R.anim.slide_up, R.anim.no_movement, R.anim.no_movement, R.anim.slide_down);
-                fragmentTransaction.add(R.id.activityMain, addUserFragment);
+                fragmentTransaction.add(R.id.activityMain, addUserFragment, "addUserFragment");
                 fragmentTransaction.addToBackStack(null);
                 fragmentTransaction.commit();
 
-
-
+                modeChangeListener.onModeChange(Mode.ADD_MODE);
             }
         });
 
+        fabSave.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ((AddUserFragment)getSupportFragmentManager().findFragmentByTag("addUserFragment")).saveUser();
+            }
+        });
 
+        fabCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ((AddUserFragment)getSupportFragmentManager().findFragmentByTag("addUserFragment")).cancel();
+            }
+        });
 
+        modeChangeListener.onModeChange(mMode);
 
     }
 
@@ -146,5 +181,20 @@ public class MainActivity extends AppCompatActivity implements ListViewFragmentL
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putSerializable("MODE", mMode);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+
+        if (mMode == Mode.ADD_MODE) {
+            ((ModeChangeListener) this).onModeChange(Mode.LIST_MODE);
+        }
     }
 }
